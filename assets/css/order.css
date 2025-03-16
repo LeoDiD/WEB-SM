@@ -85,7 +85,6 @@ h1 {
     margin-bottom: 20px;
 }
 
-/* Table Container - Enables Scroll for Table Body */
 .table-container {
     justify-content: center;
     width: 100%;
@@ -97,7 +96,6 @@ h1 {
     margin-left: 50px;
 }
 
-/* Hide scrollbar for WebKit browsers (Chrome, Safari) */
 .table-container::-webkit-scrollbar {
     width: 0;
     height: 0;
@@ -112,11 +110,11 @@ h1 {
 
 /* Table Styling */
 .order-table {
-    width: 70%;
+    width: 90%; /* Adjust width as needed */
     border-collapse: collapse;
     background-color: white;
+    table-layout: fixed; /* Ensure consistent column widths */
 }
-
 /* Sticky Header */
 .order-table thead {
     position: sticky;
@@ -138,6 +136,27 @@ h1 {
     padding: 12px;
     border: 1px solid #ddd;
     text-align: left;
+    word-wrap: break-word; /* Handle long text */
+}
+
+.order-table th:nth-child(1), .order-table td:nth-child(1) {
+    width: 15%; /* Name column */
+}
+
+.order-table th:nth-child(2), .order-table td:nth-child(2) {
+    width: 35%; /* Order column */
+}
+
+.order-table th:nth-child(3), .order-table td:nth-child(3) {
+    width: 15%; /* Status column */
+}
+
+.order-table th:nth-child(4), .order-table td:nth-child(4) {
+    width: 15%; /* Total Price column */
+}
+
+.order-table th:nth-child(5), .order-table td:nth-child(5) {
+    width: 20%; /* Actions column */
 }
 
 /* Hover Effect on Rows */
