@@ -43,7 +43,7 @@ $(document).ready(function () {
 
 // Fetch Orders from API
 function fetchOrders() {
-    $.getJSON("/WEB-SM/api/place_order.php?action=fetch", function (data) {
+    $.getJSON("/WEB-SM/api/fetch_orders.php?action=fetch", function (data) {
         console.log("Server Response:", data); // Log the server response
         let tableBody = $(".order-table tbody");
         tableBody.empty(); // Clear existing rows
@@ -110,7 +110,7 @@ function closeModal() {
 function confirmOrder(id, button) {
     console.log("Confirming Order ID:", id);
 
-    $.post("/WEB-SM/api/place_order.php", { action: "confirm", id: id }, function (response) {
+    $.post("/WEB-SM/api/fetch_orders.php", { action: "confirm", id: id }, function (response) {
         console.log("Response from Server:", response);
 
         if (response.success) {
@@ -129,7 +129,7 @@ function deleteOrder(id, button) {
     console.log("Deleting Order ID:", id);
 
     if (confirm("Are you sure you want to delete this order?")) {
-        $.post("/WEB-SM/api/place_order.php", { action: "delete", id: id }, function (response) {
+        $.post("/WEB-SM/api/fetch_orders.php", { action: "delete", id: id }, function (response) {
             console.log("Response from Server:", response);
 
             if (response.success) {

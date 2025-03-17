@@ -23,14 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = $_GET['action'] ?? '';
     error_log("Action: " . $action);
 
-    switch ($action) {
-        case 'fetch':
-            fetchOrders($conn);
-            break;
-        default:
-            echo json_encode(["success" => false, "error" => "Invalid action"]);
-            break;
+    if ($action === 'fetch') {
+        fetchOrders($conn);
+    } else {
+        echo json_encode(["success" => false, "error" => "Invalid action"]);
     }
+    
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);
     if (!$data || !isset($data['action'])) {
@@ -41,20 +39,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = $data['action'];
     error_log("Action: " . $action);
 
-    switch ($action) {
-        case 'confirm':
-            confirmOrder($conn, $data);
-            break;
-        case 'delete':
-            deleteOrder($conn, $data);
-            break;
-        case 'place':
-            placeOrder($conn, $data);
-            break;
-        default:
-            echo json_encode(["success" => false, "error" => "Invalid action"]);
-            break;
+    if ($action === 'confirm') {
+        confirmOrder($conn, $data);
+    } elseif ($action === 'delete') {
+        deleteOrder($conn, $data);
+    } elseif ($action === 'place') {
+        placeOrder($conn, $data);
+    } else {
+        echo json_encode(["success" => false, "error" => "Invalid action"]);
     }
+    
 } else {
     echo json_encode(["success" => false, "error" => "Invalid request method"]);
 }
