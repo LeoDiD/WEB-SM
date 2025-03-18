@@ -8,7 +8,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
-    echo json_encode(["success" => false, "error" => "Database connection failed"]);
+    echo json_encode(["success" => false, "error" => "Database connection failed: " . $conn->connect_error]);
     exit;
 }
 
@@ -19,6 +19,12 @@ error_log("GET Data: " . print_r($_GET, true));
 error_log("Input Data: " . file_get_contents("php://input"));
 
 // Handle OPTIONS preflight request for CORS
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Handle GET requests (e.g., fetch orders)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = $_GET['action'] ?? '';
     error_log("Action: " . $action);
@@ -26,30 +32,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($action === 'fetch') {
         fetchOrders($conn);
     } else {
-        echo json_encode(["success" => false, "error" => "Invalid action"]);
+        echo json_encode(["success" => false, "error" => "Invalid action for GET request"]);
     }
-    
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+}
+
+// Handle POST requests (e.g., confirm, delete, place, update_status)
+elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);
     if (!$data || !isset($data['action'])) {
         echo json_encode(["success" => false, "error" => "Missing action parameter"]);
         exit;
     }
-
+    
     $action = $data['action'];
     error_log("Action: " . $action);
-
-    if ($action === 'confirm') {
-        confirmOrder($conn, $data);
-    } elseif ($action === 'delete') {
-        deleteOrder($conn, $data);
-    } elseif ($action === 'place') {
-        placeOrder($conn, $data);
-    } else {
-        echo json_encode(["success" => false, "error" => "Invalid action"]);
-    }
     
+    switch ($action) {
+        case 'fetch':
+            fetchOrders($conn);
+            break;
+        case 'confirm':
+            confirmOrder($conn, $data);
+            break;
+        case 'delete':
+            deleteOrder($conn, $data);
+            break;
+        case 'place':
+            placeOrder($conn, $data);
+            break;
+        case 'update_status': // Handle update_status action
+            updateOrderStatus($conn, $data);
+            break;
+        default:
+            echo json_encode(["success" => false, "error" => "Invalid action"]);
+            break;
+    }
 } else {
+    // Invalid request method
     echo json_encode(["success" => false, "error" => "Invalid request method"]);
 }
 
@@ -59,7 +78,7 @@ function fetchOrders($conn) {
     $result = $conn->query($query);
 
     if (!$result) {
-        echo json_encode(["success" => false, "error" => "Failed to fetch orders"]);
+        echo json_encode(["success" => false, "error" => "Failed to fetch orders: " . $conn->error]);
         exit;
     }
 
@@ -73,39 +92,65 @@ function fetchOrders($conn) {
 
 // Confirm an order
 function confirmOrder($conn, $data) {
-    $id = $data['id'] ?? 0;
-
-    if (!$id) {
-        echo json_encode(["success" => false, "error" => "Invalid order ID"]);
+    if (!isset($data['id'])) {
+        echo json_encode(["success" => false, "error" => "Missing order ID"]);
         exit;
     }
 
+    $id = $data['id'];
     $stmt = $conn->prepare("UPDATE orders SET status = 'Confirmed' WHERE id = ?");
     $stmt->bind_param("i", $id);
 
     if ($stmt->execute()) {
         echo json_encode(["success" => true]);
     } else {
-        echo json_encode(["success" => false, "error" => "Failed to confirm order"]);
+        echo json_encode(["success" => false, "error" => "Failed to confirm order: " . $stmt->error]);
     }
 }
 
 // Delete an order
 function deleteOrder($conn, $data) {
-    $id = $data['id'] ?? 0;
-
-    if (!$id) {
-        echo json_encode(["success" => false, "error" => "Invalid order ID"]);
+    if (!isset($data['id'])) {
+        echo json_encode(["success" => false, "error" => "Missing order ID"]);
         exit;
     }
 
+    $id = $data['id'];
     $stmt = $conn->prepare("DELETE FROM orders WHERE id = ?");
     $stmt->bind_param("i", $id);
 
     if ($stmt->execute()) {
         echo json_encode(["success" => true]);
     } else {
-        echo json_encode(["success" => false, "error" => "Failed to delete order"]);
+        echo json_encode(["success" => false, "error" => "Failed to delete order: " . $stmt->error]);
+    }
+}
+
+// Update order status
+function updateOrderStatus($conn, $data) {
+    if (!isset($data['id'], $data['status'])) {
+        echo json_encode(["success" => false, "error" => "Missing required fields"]);
+        exit;
+    }
+
+    $id = $data['id'];
+    $status = $data['status'];
+
+    // Validate status
+    $allowedStatuses = ['Pending', 'Processing', 'Completed', 'Canceled'];
+    if (!in_array($status, $allowedStatuses)) {
+        echo json_encode(["success" => false, "error" => "Invalid status"]);
+        exit;
+    }
+
+    // Update the order status
+    $stmt = $conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
+    $stmt->bind_param("si", $status, $id);
+
+    if ($stmt->execute()) {
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["success" => false, "error" => "Failed to update order status"]);
     }
 }
 
@@ -131,7 +176,7 @@ function placeOrder($conn, $data) {
         $stmt->bind_param("ssds", $customer_name, $order_details, $total_price, $status);
 
         if (!$stmt->execute()) {
-            throw new Exception("Failed to place order");
+            throw new Exception("Failed to place order: " . $stmt->error);
         }
 
         $order_id = $stmt->insert_id;
@@ -145,7 +190,7 @@ function placeOrder($conn, $data) {
             $stmt->bind_param("ii", $quantity, $product_id);
 
             if (!$stmt->execute()) {
-                throw new Exception("Failed to update product stock");
+                throw new Exception("Failed to update product stock: " . $stmt->error);
             }
         }
 

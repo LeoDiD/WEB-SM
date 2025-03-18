@@ -51,21 +51,26 @@ function fetchOrders() {
         if (data && data.success && data.data) {
             if (data.data.length > 0) {
                 data.data.forEach(order => {
-                    // Ensure total_price is a number
                     const totalPrice = parseFloat(order.total_price);
                     if (isNaN(totalPrice)) {
                         console.error("Invalid total_price for order:", order);
-                        return; // Skip this order if total_price is invalid
+                        return;
                     }
 
                     let row = `<tr>
                         <td>${order.customer_name}</td>
-                        <td>${formatOrderDetails(order.order_details)}</td> <!-- Format order details -->
-                        <td>${order.status}</td>
-                        <td>₱${totalPrice.toFixed(2)}</td> <!-- Display total price -->
+                        <td>${formatOrderDetails(order.order_details)}</td>
+                        <td>
+                            <select class="status-dropdown" data-id="${order.id}">
+                                <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                <option value="Processing" ${order.status === 'Processing' ? 'selected' : ''}>Processing</option>
+                                <option value="Completed" ${order.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                                <option value="Canceled" ${order.status === 'Canceled' ? 'selected' : ''}>Canceled</option>
+                            </select>
+                        </td>
+                        <td>₱${totalPrice.toFixed(2)}</td>
                         <td>
                             <button class="view-btn">View</button>
-                            <button class="confirm-btn" data-id="${order.id}">Confirm</button>
                             <button class="delete-btn" data-id="${order.id}">Delete</button>
                         </td>
                     </tr>`;
@@ -84,6 +89,40 @@ function fetchOrders() {
     });
 }
 
+// Event listener for status dropdown change
+$(document).on("change", ".status-dropdown", function () {
+    const orderId = $(this).data("id");
+    const newStatus = $(this).val();
+
+    const payload = {
+        action: "update_status",
+        id: orderId,
+        status: newStatus
+    };
+
+    console.log("Sending payload:", payload);
+
+    $.ajax({
+        url: "/WEB-SM/api/fetch_orders.php",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(payload),
+        dataType: "json",
+        success: function (response) {
+            if (response.success) {
+                alert("Order status updated successfully!");
+            } else {
+                alert("Failed to update order status: " + response.error);
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("AJAX Error:", status, error);
+            alert("Network error: " + error);
+        }
+    });
+});
+
+
 // Helper function to format order details
 function formatOrderDetails(orderDetails) {
     try {
@@ -98,12 +137,12 @@ function formatOrderDetails(orderDetails) {
 // View Order Modal
 function viewOrder(name, order) {
     $("#orderDetails").text(`${name} ordered: ${order}`);
-    $("#orderModal").fadeIn(200); // Use fadeIn for smooth appearance
+    $("#orderModal").fadeIn(200);
 }
 
 // Close Modal
 function closeModal() {
-    $("#orderModal").fadeOut(200); // Use fadeOut for smooth disappearance
+    $("#orderModal").fadeOut(200);
 }
 
 // Confirm Order (Remove Row on Success)
