@@ -5,17 +5,6 @@ body {
     background-color: #f5f5f5;
 }
 
-/* Header */
-.header {
-    background-color: rgba(17, 14, 225, 1);
-    display: flex;
-    justify-content: space-between; /* This will push the left and right elements apart */
-    align-items: center;
-    padding: 15px;
-    height: 60px;
-    margin-left: 80px;
-}
-
 .logo-container {
     display: flex;
     align-items: center;
@@ -86,14 +75,14 @@ h1 {
 }
 
 .table-container {
+    display: flex;
     justify-content: center;
-    width: 100%;
-    max-height: 400px; /* Adjust height as needed */
+    align-items: center;
+    width: 100%; /* Ensures it takes full width */
+    max-height: 500px; /* Adjust height as needed */
     overflow-y: auto;
     overflow-x: hidden;
     border-radius: 8px;
-    position: relative;
-    margin-left: 50px;
 }
 
 .table-container::-webkit-scrollbar {
@@ -102,20 +91,19 @@ h1 {
     display: none;
 }
 
-/* Hide scrollbar for Firefox */
 .table-container {
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
 
-/* Table Styling */
 .order-table {
-    width: 90%; /* Adjust width as needed */
+    width: 100%;
+    margin: auto;
     border-collapse: collapse;
     background-color: white;
-    table-layout: fixed; /* Ensure consistent column widths */
+    table-layout: fixed;
 }
-/* Sticky Header */
+
 .order-table thead {
     position: sticky;
     top: 0;
@@ -124,19 +112,17 @@ h1 {
     z-index: 10;
 }
 
-/* Table Header Cells */
 .order-table th {
     padding: 12px;
     border: 1px solid #ddd;
     text-align: left;
 }
 
-/* Table Body Cells */
 .order-table td {
     padding: 12px;
     border: 1px solid #ddd;
     text-align: left;
-    word-wrap: break-word; /* Handle long text */
+    word-wrap: break-word;
 }
 
 .order-table th:nth-child(1), .order-table td:nth-child(1) {
@@ -159,12 +145,10 @@ h1 {
     width: 20%; /* Actions column */
 }
 
-/* Hover Effect on Rows */
 .order-table tbody tr:hover {
     background-color: #f1f1f1;
 }
 
-/* Status Dropdown */
 .status-dropdown {
     padding: 5px;
     border-radius: 4px;
@@ -177,7 +161,6 @@ h1 {
     padding: 5px;
 }
 
-/* Buttons */
 .view-btn, .confirm-btn, .delete-btn {
     padding: 8px 12px;
     border: none;

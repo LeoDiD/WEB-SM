@@ -60,7 +60,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'place':
             placeOrder($conn, $data);
             break;
-        case 'update_status': // Handle update_status action
+        case 'update_status':
             updateOrderStatus($conn, $data);
             break;
         default:
