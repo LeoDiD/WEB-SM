@@ -31,9 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($action === 'fetch') {
         fetchOrders($conn);
+    } elseif ($action === 'getTotalOrders') {
+        getTotalOrders($conn);
+    } elseif ($action === 'customerOrderStats') {
+        getCustomerOrderStats($conn);
     } else {
         echo json_encode(["success" => false, "error" => "Invalid action for GET request"]);
     }
+    
 }
 
 // Handle POST requests (e.g., confirm, delete, place, update_status)
@@ -204,6 +209,39 @@ function placeOrder($conn, $data) {
         echo json_encode(["success" => false, "error" => $e->getMessage()]);
     }
 }
+
+// Get total number of orders
+function getTotalOrders($conn) {
+    $query = "SELECT COUNT(*) as total_orders FROM orders";
+    $result = $conn->query($query);
+    
+    if ($result) {
+        $row = $result->fetch_assoc();
+        echo json_encode(["total_orders" => (int)$row["total_orders"]]);
+    } else {
+        echo json_encode(["success" => false, "error" => "Failed to fetch total orders"]);
+    }
+}
+
+// Get customer order statistics
+    function getCustomerOrderStats($conn) {
+        $query = "SELECT customer_name, COUNT(*) as order_count FROM orders GROUP BY customer_name";
+        $result = $conn->query($query);
+
+        if ($result) {
+            $labels = [];
+            $values = [];
+
+            while ($row = $result->fetch_assoc()) {
+                $labels[] = $row["customer_name"];
+                $values[] = (int)$row["order_count"];
+            }
+
+            echo json_encode(["labels" => $labels, "values" => $values]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Failed to fetch customer order stats"]);
+        }
+    }
 
 $conn->close();
 ?>

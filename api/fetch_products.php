@@ -23,7 +23,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // FETCH products with optional category filter
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $action = $_GET['action'] ?? '';
+
+    if ($action === 'getTotalProducts') {
+        getTotalProducts($conn);
+        exit;
+    }
+
     $category = isset($_GET['category']) ? $conn->real_escape_string($_GET['category']) : null;
+
 
     if ($category) {
         // If category is provided, filter products by category
@@ -99,12 +107,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Invalid action
     echo json_encode(["success" => false, "error" => "Invalid action"]);
     exit;
 }
 
-// Invalid request method
+    // Get total number of products
+    function getTotalProducts($conn) {
+        $query = "SELECT COUNT(*) as totalProducts FROM products";
+        $result = $conn->query($query);
+        
+        if ($result) {
+            $row = $result->fetch_assoc();
+            echo json_encode(["totalProducts" => (int)$row["totalProducts"]]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Failed to fetch total products"]);
+        }
+    }
+
 http_response_code(400);
 echo json_encode(["success" => false, "error" => "Invalid request"]);
 ?>

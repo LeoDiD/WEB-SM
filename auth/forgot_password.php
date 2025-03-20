@@ -30,6 +30,10 @@ $user = $result->fetch_assoc();
 $token = bin2hex(random_bytes(32)); // Generate a 64-character token
 $expiry = date('Y-m-d H:i:s', strtotime('+2 hours'));
 
+// Debugging: Log the token and expiry time
+error_log("Generated token: " . $token);
+error_log("Token expiry: " . $expiry);
+
 // Save token and expiry in the database
 $stmt = $conn->prepare("UPDATE users_mobile SET reset_token=?, reset_expiry=? WHERE email=?");
 $stmt->bind_param("sss", $token, $expiry, $email);
@@ -46,12 +50,12 @@ try {
     $mail->isSMTP();
     $mail->Host = 'smtp.gmail.com';
     $mail->SMTPAuth = true;
-    $mail->Username = 'shunaml1604@gmail.com';
-    $mail->Password = 'hqdj fdkv ksqu mypj'; 
+    $mail->Username = 'ezmarket1604@gmail.com';
+    $mail->Password = 'uryq qsfs rdxw ebrf'; 
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port = 587;
 
-    $mail->setFrom('shunaml1604@gmail.com', 'EZ Mart');
+    $mail->setFrom('ezmarket1604@gmail.com', 'EZ Mart');
     $mail->addAddress($email);
     $mail->isHTML(true);
     $mail->Subject = "Password Reset Request";

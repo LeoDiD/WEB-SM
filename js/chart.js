@@ -75,11 +75,16 @@ function fetchData(url, key, index, chart) {
             return response.json();
         })
         .then(data => {
-            console.log(`Fetched data from ${url}:`, data); // Debugging
+            console.log(`Full response from ${url}:`, data); // Debugging
 
             if (typeof data !== 'object') {
                 console.error(`Invalid JSON response from ${url}:`, data);
                 return;
+            }
+
+            // If API response contains nested objects, extract the first key
+            if (Object.keys(data).length === 1 && typeof data[Object.keys(data)[0]] === 'object') {
+                data = data[Object.keys(data)[0]];
             }
 
             // Handling "customerOrderStats" (bar chart)
@@ -104,7 +109,7 @@ function fetchData(url, key, index, chart) {
                     console.error(`Invalid number format for ${key} from ${url}:`, data[key]);
                 }
             } else {
-                console.error(`Invalid response format from ${url}. Response received:`, JSON.stringify(data));
+                console.error(`Invalid format for ${key} from ${url}:`, data);
             }
         })
         .catch(error => console.error(`Error fetching data from ${url}:`, error));
