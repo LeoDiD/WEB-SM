@@ -13,38 +13,40 @@ $(document).ready(function () {
                 notificationList.empty();
 
                 if (response.length > 0) {
-                    bell.addClass("has-notification");
+                    bell.addClass("has-notification"); // Add highlight if there are new notifications
                     response.forEach(notification => {
-                        notificationList.append(`
+                        let listItem = $(`
                             <li class="${notification.status === 'read' ? 'read' : 'unread'}">
                                 ${notification.message}
                                 ${notification.status === 'read' ? '✔' : `<button class="mark-read" data-id="${notification.id}">✔</button>`}
                             </li>
                         `);
+                        notificationList.append(listItem);
                     });
                 } else {
-                    bell.removeClass("has-notification");
-                    notificationList.append('<li>No notifications</li>');
+                    bell.removeClass("has-notification"); // Remove highlight if no unread notifications
+                    notificationList.append('<li>No new notifications</li>');
                 }
             },
-            error: function () {
-                console.error("Error fetching notifications.");
+            error: function (xhr, status, error) {
+                console.error("Error fetching notifications:", error);
             }
         });
     }
 
+    // Mark a Single Notification as Read
     $(document).on("click", ".mark-read", function () {
         const notificationId = $(this).data("id");
 
         $.ajax({
-            url: "mark_notifications.php", // Corrected filename
+            url: "mark_notifications.php",
             method: "POST",
             data: JSON.stringify({ id: notificationId }),
             contentType: "application/json",
             dataType: "json",
             success: function (response) {
                 if (response.success) {
-                    fetchNotifications(); // Refresh list after marking as read
+                    fetchNotifications(); // Refresh list
                 } else {
                     console.error("Error marking notification as read:", response.error);
                 }
@@ -58,14 +60,14 @@ $(document).ready(function () {
     // Mark All as Read
     markAllReadButton.on("click", function () {
         $.ajax({
-            url: "mark_notifications.php", // Corrected filename
+            url: "mark_notifications.php",
             method: "POST",
-            data: JSON.stringify({ mark_all: true }), // Indicate that all notifications should be marked as read
+            data: JSON.stringify({ mark_all: true }),
             contentType: "application/json",
             dataType: "json",
             success: function (response) {
                 if (response.success) {
-                    fetchNotifications(); // Refresh the notifications
+                    fetchNotifications();
                 } else {
                     console.error("Error marking all as read:", response.error);
                 }

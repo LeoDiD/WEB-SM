@@ -1,5 +1,8 @@
 {
     "require": {
-        "phpmailer/phpmailer": "^6.9"
+        "phpmailer/phpmailer": "^6.9",
+        "google/auth": "^1.46",
+        "kreait/firebase-php": "^5.26",
+        "google/apiclient": "^2.18"
     }
 }

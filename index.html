@@ -15,91 +15,91 @@
 </head>
 <body>
     <!-- Header -->
-<header class="header">
-    <div class="logo-container">
-        <img src="./assets/images/ez-mart.svg" alt="EZ Mart Logo" class="ez_logo" id="ezLogo" style="width: 50px; height: auto;">
-        <span class="logo-text">Mart</span>
-    </div>
+    <header class="header">
+        <div class="logo-container">
+            <img src="./assets/images/ez-mart.svg" alt="EZ Mart Logo" class="ez_logo" id="ezLogo" style="width: 50px; height: auto;">
+            <span class="logo-text">Mart</span>
+        </div>
 
-    <!-- User Profile and Notification Section -->
-    <div class="user-notification-container">
-        <!-- Notification Bell -->
-        <div class="notification-container">
-            <img src="./assets/icons/bell.svg" alt="Notifications" class="bell" id="bell">
-            
-            <!-- Notification Center -->
-            <div id="notification-center">
-                <h2>Notifications</h2>
-                <div id="notification-container">
-                    <ul id="notification-list">
-                        <li>No new notifications</li>
+        <!-- User Profile and Notification Section -->
+        <div class="user-notification-container">
+            <!-- Notification Bell -->
+            <div class="notification-container">
+                <img src="./assets/icons/bell.svg" alt="Notifications" class="bell" id="bell">
+                
+                <!-- Notification Center -->
+                <div id="notification-center">
+                    <h2>Notifications</h2>
+                    <div id="notification-container">
+                        <ul id="notification-list">
+                            <li>No new notifications</li>
+                        </ul>
+                        <button id="mark-all-read">Mark All as Read</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile Section -->
+            <div class="user-container" id="userContainer">
+                <img src="./assets/images/user_profile.png" alt="User Profile" class="user-profile" id="userProfile">
+                <i class="fa-solid fa-caret-down dropdown-icon" id="dropdownIcon"></i>
+
+                <!-- User Dropdown Menu -->
+                <div class="user-dropdown hidden" id="userDropdown">
+                    <ul>
+                        <li>
+                            <a href="./user-profile/user_info.html">
+                            <i class="fa-solid fa-user"></i> Edit Profile</a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa-solid fa-gear">
+                            </i> Settings</a>
+                        </li>
+
+                        <li>
+                            <a href="auth/login.php">
+                            <i class="fa-solid fa-right-from-bracket">
+                        </i> Logout</a>
+                        </li>
                     </ul>
-                    <button id="mark-all-read">Mark All as Read</button>
                 </div>
             </div>
         </div>
-
-        <!-- User Profile Section -->
-        <div class="user-container" id="userContainer">
-            <img src="./assets/images/user_profile.png" alt="User Profile" class="user-profile" id="userProfile">
-            <i class="fa-solid fa-caret-down dropdown-icon" id="dropdownIcon"></i>
-
-            <!-- User Dropdown Menu -->
-            <div class="user-dropdown hidden" id="userDropdown">
-                <ul>
-                    <li>
-                        <a href="./user-profile/user_info.html">
-                        <i class="fa-solid fa-user"></i> Edit Profile</a>
-                    </li>
-                    <li>
-                        <a href="#"><i class="fa-solid fa-gear">
-                        </i> Settings</a>
-                    </li>
-
-                    <li>
-                        <a href="auth/login.php">
-                        <i class="fa-solid fa-right-from-bracket">
-                    </i> Logout</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</header>
+    </header>
 
     <!-- Main Content -->
     <main class="container">
         <h1 id="dashBoard">Dashboard</h1>
 
-            <!-- Counter Container -->
-            <div class="counter-container">
-                <!-- Total Products Count -->
-                <div class="counter-box">
+        <!-- Counter Container -->
+        <div class="counter-container">
+            <!-- Total Products Count -->
+            <div class="counter-box">
                 <label>Total Products:</label>
-                    <div class="counter-icon">
-                        <img src="./assets/icons/product-icon-counter.png" alt="Product Icon">
-                        <span id="totalProductCount">0</span>
-                    </div>
-                </div>
-
-                <!-- Order Counter -->
-                <div class="counter-box">
-                <label>Total Orders:</label>
-                    <div class="counter-icon">
-                        <img src="./assets/icons/order-icon-counter.png" alt="Order Icon">
-                        <span id="totalOrderCount">0</span>
-                    </div>
-                </div>
-
-                <!-- Total Customer Counter -->
-                <div class="counter-box">
-                    <label>Total Customers:</label>
-                    <div class="counter-icon">
-                        <img src="./assets/icons/customer-icon-counter.png" alt="Customer Icon">
-                        <span id="totalCustomerCount">0</span>
-                    </div>
+                <div class="counter-icon">
+                    <img src="./assets/icons/product-icon-counter.png" alt="Product Icon">
+                    <span id="totalProductCount">0</span>
                 </div>
             </div>
+
+            <!-- Order Counter -->
+            <div class="counter-box">
+                <label>Total Orders:</label>
+                <div class="counter-icon">
+                    <img src="./assets/icons/order-icon-counter.png" alt="Order Icon">
+                    <span id="totalOrderCount">0</span>
+                </div>
+            </div>
+
+            <!-- Total Customer Counter -->
+            <div class="counter-box">
+                <label>Total Customers:</label>
+                <div class="counter-icon">
+                    <img src="./assets/icons/customer-icon-counter.png" alt="Customer Icon">
+                    <span id="totalCustomerCount">0</span>
+                </div>
+            </div>
+        </div>
 
         <!-- Product List -->
         <div id="productList" class="product-list">
@@ -149,8 +149,12 @@
         <canvas id="customerChart" class="chart"></canvas>
     </div>
 
+    <!-- Add a button for enabling notifications -->
+    <button id="enable-notifications">Enable Notifications</button>
+
     <!-- Include external JavaScript files -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="./js/fcm.js"></script> <!-- Add type="module" -->
     <script src="./js/chart.js"></script>
     <script src="./js/index.js"></script>
     <script src="./js/user.js"></script>

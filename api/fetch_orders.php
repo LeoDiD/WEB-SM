@@ -1,4 +1,11 @@
 <?php
+// Disable displaying errors and warnings
+ini_set('display_errors', 0);
+error_reporting(0);
+
+// Include Composer autoloader
+require __DIR__ . '/../vendor/autoload.php';
+
 require_once __DIR__ . '/../config/db.php';
 
 header('Content-Type: application/json');
@@ -11,12 +18,6 @@ if ($conn->connect_error) {
     echo json_encode(["success" => false, "error" => "Database connection failed: " . $conn->connect_error]);
     exit;
 }
-
-// Log the request method and parameters
-error_log("Request Method: " . $_SERVER['REQUEST_METHOD']);
-error_log("POST Data: " . print_r($_POST, true));
-error_log("GET Data: " . print_r($_GET, true));
-error_log("Input Data: " . file_get_contents("php://input"));
 
 // Handle OPTIONS preflight request for CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -38,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } else {
         echo json_encode(["success" => false, "error" => "Invalid action for GET request"]);
     }
-    
 }
 
 // Handle POST requests (e.g., confirm, delete, place, update_status)
@@ -199,14 +199,31 @@ function placeOrder($conn, $data) {
             }
         }
 
+        // Insert notification
+        $notification_message = "New order placed by $customer_name. Order ID: $order_id.";
+        $stmt = $conn->prepare("INSERT INTO notifications (message, status) VALUES (?, 'unread')");
+        $stmt->bind_param("s", $notification_message);
+        
+        error_log("Failed to insert notification: " . $stmt->error);
+
+        
+        if (!$stmt->execute()) {
+            throw new Exception("Failed to insert notification: " . $stmt->error);
+        }
+
         // Commit transaction
         $conn->commit();
 
+        // Return success response
         echo json_encode(["success" => true, "order_id" => $order_id]);
+        exit; // Terminate the script after sending the JSON response
     } catch (Exception $e) {
         // Rollback transaction
         $conn->rollback();
+        error_log("Error in placeOrder: " . $e->getMessage());
+        http_response_code(500); // Set HTTP status code to 500
         echo json_encode(["success" => false, "error" => $e->getMessage()]);
+        exit; // Terminate the script after sending the JSON response
     }
 }
 
@@ -224,24 +241,24 @@ function getTotalOrders($conn) {
 }
 
 // Get customer order statistics
-    function getCustomerOrderStats($conn) {
-        $query = "SELECT customer_name, COUNT(*) as order_count FROM orders GROUP BY customer_name";
-        $result = $conn->query($query);
+function getCustomerOrderStats($conn) {
+    $query = "SELECT customer_name, COUNT(*) as order_count FROM orders GROUP BY customer_name";
+    $result = $conn->query($query);
 
-        if ($result) {
-            $labels = [];
-            $values = [];
+    if ($result) {
+        $labels = [];
+        $values = [];
 
-            while ($row = $result->fetch_assoc()) {
-                $labels[] = $row["customer_name"];
-                $values[] = (int)$row["order_count"];
-            }
-
-            echo json_encode(["labels" => $labels, "values" => $values]);
-        } else {
-            echo json_encode(["success" => false, "error" => "Failed to fetch customer order stats"]);
+        while ($row = $result->fetch_assoc()) {
+            $labels[] = $row["customer_name"];
+            $values[] = (int)$row["order_count"];
         }
+
+        echo json_encode(["labels" => $labels, "values" => $values]);
+    } else {
+        echo json_encode(["success" => false, "error" => "Failed to fetch customer order stats"]);
     }
+}
 
 $conn->close();
 ?>
