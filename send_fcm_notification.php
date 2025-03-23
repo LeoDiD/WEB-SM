@@ -1,23 +1,62 @@
 <?php
-require __DIR__ . '/vendor/autoload.php'; // Firebase SDK
+require_once __DIR__ . '/get_fcm_token.php';
 
-use Kreait\Firebase\Factory;
-use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification;
+$token = getOAuthToken();
+if (strpos($token, 'Error:') === 0) {
+    echo "Failed to get token: " . $token;
+} else {
+    echo "Access Token: " . $token;
+}
 
-function sendFCMNotification($token, $title, $body) {
-    $factory = (new Factory)->withServiceAccount(__DIR__ . '/config/ezmart-firebase-adminsdk.json');
-    $messaging = $factory->createMessaging();
+function sendFCMNotification($deviceToken, $title, $body) {
+    $oauthToken = getOAuthToken(); 
+    
+    if (!$oauthToken) {
 
-    $notification = Notification::create($title, $body);
-    $message = CloudMessage::withTarget('token', $token)->withNotification($notification);
+        return false; 
+    }
 
-    try {
-        $messaging->send($message);
-        return true;
-    } catch (Exception $e) {
-        error_log("FCM Error: " . $e->getMessage());
+    $url = "https://fcm.googleapis.com/v1/projects/ezmart-f178a/messages:send"; 
+
+    $headers = [
+        "Authorization: Bearer $oauthToken",
+        "Content-Type: application/json"
+    ];
+
+    $notificationData = [
+        "message" => [
+            "token" => $deviceToken,
+            "notification" => [
+                "title" => $title,
+                "body" => $body,
+                "sound" => "default"
+            ]
+        ]
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($notificationData));
+
+    $response = curl_exec($ch);
+
+    if (curl_errno($ch)) {
+        error_log('cURL error: ' . curl_error($ch));
+        curl_close($ch);
         return false;
     }
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200) {
+        error_log('FCM Response: ' . $response);
+        return false;
+    }
+
+    return true;
 }
 ?>

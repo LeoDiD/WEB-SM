@@ -1,12 +1,9 @@
 <?php
-// Disable displaying errors and warnings
-ini_set('display_errors', 0);
-error_reporting(0);
-
 // Include Composer autoloader
-require __DIR__ . '/../vendor/autoload.php';
-
+require __DIR__ . '/../get_fcm_token.php';
+require __DIR__ . '../../vendor/autoload.php';
 require_once __DIR__ . '/../config/db.php';
+
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -95,24 +92,6 @@ function fetchOrders($conn) {
     echo json_encode(["success" => true, "data" => $orders]);
 }
 
-// Confirm an order
-function confirmOrder($conn, $data) {
-    if (!isset($data['id'])) {
-        echo json_encode(["success" => false, "error" => "Missing order ID"]);
-        exit;
-    }
-
-    $id = $data['id'];
-    $stmt = $conn->prepare("UPDATE orders SET status = 'Confirmed' WHERE id = ?");
-    $stmt->bind_param("i", $id);
-
-    if ($stmt->execute()) {
-        echo json_encode(["success" => true]);
-    } else {
-        echo json_encode(["success" => false, "error" => "Failed to confirm order: " . $stmt->error]);
-    }
-}
-
 // Delete an order
 function deleteOrder($conn, $data) {
     if (!isset($data['id'])) {
@@ -128,6 +107,24 @@ function deleteOrder($conn, $data) {
         echo json_encode(["success" => true]);
     } else {
         echo json_encode(["success" => false, "error" => "Failed to delete order: " . $stmt->error]);
+    }
+}
+
+// Confirm an order
+function confirmOrder($conn, $data) {
+    if (!isset($data['id'])) {
+        echo json_encode(["success" => false, "error" => "Missing order ID"]);
+        exit;
+    }
+
+    $id = $data['id'];
+    $stmt = $conn->prepare("UPDATE orders SET status = 'Confirmed' WHERE id = ?");
+    $stmt->bind_param("i", $id);
+
+    if ($stmt->execute()) {
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["success" => false, "error" => "Failed to confirm order: " . $stmt->error]);
     }
 }
 
@@ -148,12 +145,35 @@ function updateOrderStatus($conn, $data) {
         exit;
     }
 
+    // Fetch the FCM token for the order
+    $stmt = $conn->prepare("SELECT fcm_token FROM orders WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $order = $result->fetch_assoc();
+
+    if (!$order || empty($order['fcm_token'])) {
+        echo json_encode(["success" => false, "error" => "FCM token not found for this order"]);
+        exit;
+    }
+
+    $fcm_token = $order['fcm_token'];
+
     // Update the order status
     $stmt = $conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
     $stmt->bind_param("si", $status, $id);
 
     if ($stmt->execute()) {
-        echo json_encode(["success" => true]);
+        // Send notification to the customer
+        $notification_title = "Order Status Updated";
+        $notification_body = "Your order status has been updated to: " . $status;
+        $notification_sent = sendNotification($fcm_token, $notification_title, $notification_body);
+
+        if ($notification_sent) {
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["success" => false, "error" => "Failed to send notification"]);
+        }
     } else {
         echo json_encode(["success" => false, "error" => "Failed to update order status"]);
     }
@@ -161,7 +181,20 @@ function updateOrderStatus($conn, $data) {
 
 // Place a new order
 function placeOrder($conn, $data) {
-    if (!isset($data['customer_name'], $data['total_price'], $data['items'])) {
+    ob_start(); // Start output buffering
+
+    // Enable error logging
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    // Log the received data for debugging
+    error_log("Received data: " . print_r($data, true));
+
+    // Validate required fields
+    if (!isset($data['customer_name'], $data['total_price'], $data['items'], $data['fcm_token'])) {
+        error_log("Missing required fields");
+        ob_end_clean(); // Clear buffer
         echo json_encode(["success" => false, "error" => "Missing required fields"]);
         exit;
     }
@@ -169,6 +202,7 @@ function placeOrder($conn, $data) {
     $customer_name = $conn->real_escape_string($data['customer_name']);
     $total_price = $data['total_price'];
     $items = $data['items'];
+    $fcm_token = $data['fcm_token'];
     $status = 'Pending'; // Default status
 
     // Start transaction
@@ -176,15 +210,16 @@ function placeOrder($conn, $data) {
 
     try {
         // Insert the order
-        $stmt = $conn->prepare("INSERT INTO orders (customer_name, order_details, total_price, status) VALUES (?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO orders (customer_name, order_details, total_price, status, fcm_token) VALUES (?, ?, ?, ?, ?)");
         $order_details = json_encode($items);
-        $stmt->bind_param("ssds", $customer_name, $order_details, $total_price, $status);
+        $stmt->bind_param("ssdss", $customer_name, $order_details, $total_price, $status, $fcm_token);
 
         if (!$stmt->execute()) {
             throw new Exception("Failed to place order: " . $stmt->error);
         }
 
         $order_id = $stmt->insert_id;
+        error_log("Order placed successfully. Order ID: " . $order_id);
 
         // Reduce stock for each product
         foreach ($items as $item) {
@@ -203,10 +238,7 @@ function placeOrder($conn, $data) {
         $notification_message = "New order placed by $customer_name. Order ID: $order_id.";
         $stmt = $conn->prepare("INSERT INTO notifications (message, status) VALUES (?, 'unread')");
         $stmt->bind_param("s", $notification_message);
-        
-        error_log("Failed to insert notification: " . $stmt->error);
 
-        
         if (!$stmt->execute()) {
             throw new Exception("Failed to insert notification: " . $stmt->error);
         }
@@ -214,18 +246,90 @@ function placeOrder($conn, $data) {
         // Commit transaction
         $conn->commit();
 
-        // Return success response
-        echo json_encode(["success" => true, "order_id" => $order_id]);
-        exit; // Terminate the script after sending the JSON response
+        // Send notification to the customer
+        $notification_title = "Order Placed";
+        $notification_body = "Your order has been placed successfully. Order ID: $order_id.";
+        error_log("Sending notification to FCM token: " . $fcm_token); // Log the FCM token
+        $notification_sent = sendNotification($fcm_token, $notification_title, $notification_body);
+
+        if ($notification_sent) {
+            ob_end_clean(); // Clear buffer
+            echo json_encode(["success" => true, "order_id" => $order_id]);
+        } else {
+            ob_end_clean(); // Clear buffer
+            echo json_encode(["success" => false, "error" => "Failed to send notification"]);
+        }
     } catch (Exception $e) {
         // Rollback transaction
         $conn->rollback();
         error_log("Error in placeOrder: " . $e->getMessage());
         http_response_code(500); // Set HTTP status code to 500
+        ob_end_clean(); // Clear buffer
         echo json_encode(["success" => false, "error" => $e->getMessage()]);
-        exit; // Terminate the script after sending the JSON response
     }
 }
+
+function sendNotification($deviceToken, $title, $body) {
+    $fcmUrl = "https://fcm.googleapis.com/v1/projects/ezmart-f178a/messages:send";
+    $accessToken = getOAuthToken();
+
+    // Log the access token for debugging
+    error_log("Access Token: " . $accessToken);
+
+    if (strpos($accessToken, 'Error:') === 0) {
+        error_log("Error fetching OAuth token: " . $accessToken);
+        return false;
+    }
+
+    $notificationData = [
+        "message" => [
+            "token" => $deviceToken,
+            "notification" => [
+                "title" => $title,
+                "body" => $body
+            ],
+            "data" => [
+                "orderStatus" => "Pending",
+                "timestamp" => date("Y-m-d H:i:s")
+            ]
+        ]
+    ];
+
+    $headers = [
+        "Authorization: Bearer $accessToken",
+        "Content-Type: application/json"
+    ];
+
+    // Log the FCM request for debugging
+    error_log("FCM Request: " . json_encode([
+        "url" => $fcmUrl,
+        "headers" => $headers,
+        "body" => $notificationData
+    ]));
+
+    $client = new GuzzleHttp\Client();
+    try {
+        $response = $client->post($fcmUrl, [
+            'headers' => $headers,
+            'json' => $notificationData
+        ]);
+
+        $responseBody = json_decode($response->getBody(), true);
+        error_log("FCM Response: " . json_encode($responseBody)); // Log the FCM response
+
+        if (isset($responseBody['name'])) {
+            error_log("Notification sent successfully: " . $responseBody['name']);
+            return true;
+        } else {
+            error_log("FCM API returned an error: " . json_encode($responseBody));
+            return false;
+        }
+    } catch (Exception $e) {
+        error_log("Error sending notification: " . $e->getMessage());
+        return false;
+    }
+}
+
 
 // Get total number of orders
 function getTotalOrders($conn) {

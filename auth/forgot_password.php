@@ -51,7 +51,7 @@ try {
     $mail->Host = 'smtp.gmail.com';
     $mail->SMTPAuth = true;
     $mail->Username = 'ezmarket1604@gmail.com';
-    $mail->Password = 'uryq qsfs rdxw ebrf'; 
+    $mail->Password = 'yamh sqqt tglw fiub'; 
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port = 587;
 
