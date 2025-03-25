@@ -4,7 +4,6 @@ require __DIR__ . '/../get_fcm_token.php';
 require __DIR__ . '../../vendor/autoload.php';
 require_once __DIR__ . '/../config/db.php';
 
-
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
@@ -181,20 +180,13 @@ function updateOrderStatus($conn, $data) {
 
 // Place a new order
 function placeOrder($conn, $data) {
-    ob_start(); // Start output buffering
+    ob_start(); 
 
-    // Enable error logging
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-
-    // Log the received data for debugging
     error_log("Received data: " . print_r($data, true));
 
-    // Validate required fields
     if (!isset($data['customer_name'], $data['total_price'], $data['items'], $data['fcm_token'])) {
         error_log("Missing required fields");
-        ob_end_clean(); // Clear buffer
+        ob_end_clean();
         echo json_encode(["success" => false, "error" => "Missing required fields"]);
         exit;
     }
@@ -203,7 +195,7 @@ function placeOrder($conn, $data) {
     $total_price = $data['total_price'];
     $items = $data['items'];
     $fcm_token = $data['fcm_token'];
-    $status = 'Pending'; // Default status
+    $status = 'Pending';
 
     // Start transaction
     $conn->begin_transaction();
@@ -329,7 +321,6 @@ function sendNotification($deviceToken, $title, $body) {
         return false;
     }
 }
-
 
 // Get total number of orders
 function getTotalOrders($conn) {
